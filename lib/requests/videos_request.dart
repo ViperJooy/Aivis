@@ -7,11 +7,15 @@ class VideosRequest {
   Future<List<VideoItemModel>> getVideoList(
     String? keyword, {
     required int pageIndex,
-    int pageSize = 30,
+    int pageSize = 15,
   }) async {
     var result = await HttpClient.instance.get(
       path: "videos/search",
-      queryParameters: {"query": keyword, "page": pageIndex},
+      queryParameters: {
+        "query": keyword,
+        "page": pageIndex,
+        "per_page": pageSize,
+      },
     );
     var data = VideoListModel.fromJson(result);
     return data.videos ?? [];

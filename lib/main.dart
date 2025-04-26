@@ -4,8 +4,6 @@ import 'package:aivis/app/log.dart';
 import 'package:aivis/app/utils.dart';
 import 'package:aivis/generated/locales.g.dart';
 import 'package:aivis/modules/other/debug_log_page.dart';
-import 'package:aivis/modules/test/gnav_page.dart';
-import 'package:aivis/modules/test/view.dart';
 import 'package:aivis/routes/app_pages.dart';
 import 'package:aivis/routes/route_path.dart';
 import 'package:aivis/service/api_service.dart';
@@ -19,6 +17,8 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'modules/test/test_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // return MaterialApp(video: GnavPage());
-    // return GetMaterialApp(video: TestPage());
+    return GetMaterialApp(home: TestPage());
     return GetMaterialApp(
       title: LocaleKeys.app_name.tr,
       onGenerateTitle: (context) => LocaleKeys.app_name.tr,

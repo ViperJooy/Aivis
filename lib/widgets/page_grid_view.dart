@@ -1,34 +1,35 @@
-import 'dart:io';
-
 import 'package:aivis/app/controller/base_controller.dart';
 import 'package:aivis/widgets/status/app_empty_widget.dart';
 import 'package:aivis/widgets/status/app_error_widget.dart';
 import 'package:aivis/widgets/status/app_loadding_widget.dart';
+import 'package:aivis/widgets/status/app_not_login_widget.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 
+typedef IndexedWidgetBuilder = Widget Function(BuildContext context, int index);
+
 class PageGridView extends StatelessWidget {
   final BasePageController pageController;
   final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder? separatorBuilder;
   final EdgeInsets? padding;
   final bool firstRefresh;
   final Function()? onLoginSuccess;
   final bool showPageLoadding;
   final double crossAxisSpacing, mainAxisSpacing;
   final int crossAxisCount;
-  final bool showPCRefreshButton;
   const PageGridView({
     required this.itemBuilder,
     required this.pageController,
     this.padding,
     this.firstRefresh = false,
     this.showPageLoadding = false,
+    this.separatorBuilder,
     this.onLoginSuccess,
     this.crossAxisSpacing = 0.0,
     this.mainAxisSpacing = 0.0,
-    this.showPCRefreshButton = true,
     required this.crossAxisCount,
     Key? key,
   }) : super(key: key);
@@ -39,12 +40,10 @@ class PageGridView extends StatelessWidget {
       () => Stack(
         children: [
           EasyRefresh(
-            header: MaterialHeader(
-              processedDuration: const Duration(milliseconds: 400),
-            ),
+            header: const MaterialHeader(),
             footer: const MaterialFooter(infiniteOffset: 100, clamping: false),
             controller: pageController.easyRefreshController,
-            refreshOnStart: true,
+            refreshOnStart: firstRefresh,
             onLoad: pageController.loadData,
             onRefresh: pageController.refreshData,
             child: MasonryGridView.count(
@@ -54,54 +53,7 @@ class PageGridView extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: crossAxisSpacing,
               mainAxisSpacing: mainAxisSpacing,
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: // 加载更多按钮
-                Visibility(
-              visible:
-                  (Platform.isWindows ||
-                      Platform.isLinux ||
-                      Platform.isMacOS) &&
-                  pageController.canLoadMore.value &&
-                  !pageController.pageLoadding.value &&
-                  !pageController.pageEmpty.value,
-              child: Center(
-                child: TextButton(
-                  onPressed: pageController.loadData,
-                  child: const Text("加载更多"),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 12,
-            right: 12,
-            child: // 加载更多按钮
-                Visibility(
-              visible:
-                  (Platform.isWindows ||
-                      Platform.isLinux ||
-                      Platform.isMacOS) &&
-                  pageController.canLoadMore.value &&
-                  !pageController.pageLoadding.value &&
-                  !pageController.pageEmpty.value &&
-                  showPCRefreshButton,
-              child: Center(
-                child: IconButton(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Get.theme.cardColor.withOpacity(.8),
-                    elevation: 4,
-                  ),
-                  onPressed: () {
-                    pageController.refreshData();
-                  },
-                  icon: const Icon(Icons.refresh),
-                ),
-              ),
+              controller: pageController.scrollController,
             ),
           ),
           Offstage(
@@ -120,6 +72,10 @@ class PageGridView extends StatelessWidget {
               errorMsg: pageController.errorMsg.value,
               onRefresh: () => pageController.refreshData(),
             ),
+          ),
+          Offstage(
+            offstage: !pageController.notLogin.value,
+            child: AppNotLoginWidget(onLoginSuccess: onLoginSuccess),
           ),
         ],
       ),

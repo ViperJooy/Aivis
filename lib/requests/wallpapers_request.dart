@@ -11,7 +11,11 @@ class WallpapersRequest {
   }) async {
     var result = await HttpClient.instance.get(
       path: "v1/search",
-      queryParameters: {"query": keyword, "page": pageIndex},
+      queryParameters: {
+        "query": keyword,
+        "page": pageIndex,
+        "per_page": pageSize,
+      },
     );
     var data = WallpaperListModel.fromJson(result);
     return data.photos ?? [];

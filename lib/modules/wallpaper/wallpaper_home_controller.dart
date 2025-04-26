@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:aivis/app/controller/base_controller.dart';
 import 'package:aivis/app/event_bus.dart';
+import 'package:aivis/app/log.dart';
 import 'package:aivis/generated/locales.g.dart';
 import 'package:aivis/modules/wallpaper/wallpapers_list_controller.dart';
 import 'package:aivis/requests/wallpapers_request.dart';
@@ -32,7 +33,7 @@ class WallpaperHomeController extends GetxController
     streamSubscription = EventBus.instance.listen(
       EventBus.kBottomNavigationBarClicked,
       (index) {
-        if (index == 0) {
+        if (index == 1) {
           refreshOrScrollTop();
         }
       },

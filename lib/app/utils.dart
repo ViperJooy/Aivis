@@ -4,7 +4,7 @@ import 'package:aivis/app/app_style.dart';
 import 'package:aivis/app/log.dart';
 import 'package:aivis/generated/locales.g.dart';
 import 'package:aivis/requests/common_request.dart';
-import 'package:extended_image/extended_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 // import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
@@ -234,7 +234,7 @@ class Utils {
               itemCount: images.length,
               builder: (_, i) {
                 return PhotoViewGalleryPageOptions(
-                  imageProvider: ExtendedNetworkImageProvider(images[i]),
+                  imageProvider: CachedNetworkImageProvider(images[i]),
                   onTapUp: ((context, details, controllerValue) => Get.back()),
                 );
               },

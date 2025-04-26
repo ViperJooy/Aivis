@@ -190,7 +190,7 @@ class UserHomePage extends GetView<UserHomeController> {
         color: Colors.lightBlue,
         borderRadius: BorderRadius.circular(56),
       ),
-      child: NetImage(photo, width: 56, height: 56, borderRadius: 56),
+      // child: NetImage(photo, width: 56, height: 56, borderRadius: 56),
     );
   }
 

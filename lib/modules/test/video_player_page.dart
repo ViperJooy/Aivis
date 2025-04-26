@@ -1,0 +1,71 @@
+import 'package:aivis/modules/test/video_player_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:get/get.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+
+class VideoPlayerPage extends GetView<VideoPlayerController> {
+  const VideoPlayerPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialVideoControlsTheme(
+      normal: MaterialVideoControlsThemeData(
+        // Modify theme options:
+        buttonBarButtonSize: 24.0, //按钮大小
+        buttonBarButtonColor: Colors.white, //按钮颜色
+        brightnessGesture: true, //手势控制亮度
+        volumeGesture: true, //手势控制音量
+        seekGesture: true, //手势控制进度
+        seekOnDoubleTap: true, //双击控制进度
+        seekOnDoubleTapBackwardDuration: const Duration(seconds: 20), //快进快退时长
+        seekOnDoubleTapForwardDuration: const Duration(seconds: 20), //快进快退时长
+        speedUpOnLongPress: true, //长按倍速
+        // padding: EdgeInsets.all(20),
+        bufferingIndicatorBuilder: (BuildContext context) {
+          //自定义缓冲动画
+          return const SpinKitCubeGrid(color: Colors.white, size: 50.0);
+        },
+
+        // Modify top button bar:
+        topButtonBar: [
+          const Spacer(),
+          MaterialDesktopCustomButton(
+            onPressed: () {
+              debugPrint('Custom "Settings" button pressed.');
+            },
+            icon: const Icon(Icons.settings),
+          ),
+        ],
+
+        seekBarMargin: EdgeInsets.only(bottom: 40, left: 50, right: 50),
+        seekBarHeight: 5,
+        seekBarColor: Colors.grey,
+        seekBarPositionColor: Colors.white,
+        seekBarBufferColor: Colors.white,
+        seekBarThumbColor: Colors.white,
+      ),
+      fullscreen: const MaterialVideoControlsThemeData(
+        // Modify theme options:
+        automaticallyImplySkipNextButton: false,
+        automaticallyImplySkipPreviousButton: false,
+      ),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width * 9.0 / 16.0,
+        // Use [Video] widget to display video output.
+        child: Video(controller: controller.controller),
+      ),
+      // child: Scaffold(
+      //   body: Center(
+      //     child: SizedBox(
+      //       width: MediaQuery.of(context).size.width,
+      //       height: MediaQuery.of(context).size.width * 9.0 / 16.0,
+      //       // Use [Video] widget to display video output.
+      //       child: Video(controller: controller.controller),
+      //     ),
+      //   ),
+      // ),
+    );
+  }
+}
