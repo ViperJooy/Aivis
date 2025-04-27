@@ -49,9 +49,8 @@ jobs:
 
       #更新Flutter的packages
       - name: Restore packages
-        run: |
-          cd simple_live_app
-          flutter pub get
+        run: flutter pub get
+
 
       # 安装appdmg npm install -g appdmg
       - name: Install appdmg
