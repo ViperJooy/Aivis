@@ -2,6 +2,6 @@
   "version": "1.0.1",
   "version_num": 10001,
   "version_desc": "最新版本",
-  "prerelease":false,
+  "prerelease": false,
   "download_url": "https://github.com/ViperJooy/Aivis/releases"
 }
