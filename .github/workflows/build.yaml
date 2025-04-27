@@ -128,9 +128,7 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
-          body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
-          prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
+          body_path: document/RELEASE.txt
           token: ${{ secrets.TOKEN }}
           files: |
             build/app/outputs/flutter-apk/app-x86_64-release.apk
