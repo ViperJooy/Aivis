@@ -42,8 +42,8 @@ android {
             keyPassword = keystoreProperties["keyPassword"] as String
             storeFile = file(keystoreProperties["storeFile"] as String)
             storePassword = keystoreProperties["storePassword"] as String
-            v1SigningEnabled = true
-            v2SigningEnabled = true
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 
