@@ -7,16 +7,27 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// 读取 keystore
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+// 读取 local.properties 中 Flutter 的版本号
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(FileInputStream(localPropertiesFile))
+    }
+}
+val flutterVersionCode = localProperties.getProperty("flutterVersionCode")?.toInt() ?: 1
+val flutterVersionName = localProperties.getProperty("flutterVersionName") ?: "1.0"
+
+// 读取 key.properties 中签名信息
+val keystoreProperties = Properties().apply {
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
 }
 
 android {
     namespace = "com.viper.aivis"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = flutter.compileSdkVersion.toInt()
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -30,18 +41,18 @@ android {
 
     defaultConfig {
         applicationId = "com.viper.aivis"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = flutter.minSdkVersion.toInt()
+        targetSdk = flutter.targetSdkVersion.toInt()
+        versionCode = flutterVersionCode   // ✅ 修复这里
+        versionName = flutterVersionName   // ✅ 修复这里
     }
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = keystoreProperties["storeFile"]?.toString()?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String?
             enableV1Signing = true
             enableV2Signing = true
         }
