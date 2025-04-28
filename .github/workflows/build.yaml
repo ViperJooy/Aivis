@@ -101,7 +101,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install Dependencies
-        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+        run: sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev mpv
       - name: Enable Flutter Desktop
         run: flutter config --enable-linux-desktop
       - name: Restore Packages
