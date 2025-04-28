@@ -14,7 +14,7 @@ jobs:
       # 1.1 签出代码
       - uses: actions/checkout@v3
         with:
-          ref: main
+          ref: master
       # 1.2 写出相关签名
       - name: Get Android Keystore
         id: android_keystore
