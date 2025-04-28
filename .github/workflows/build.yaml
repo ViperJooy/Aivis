@@ -126,39 +126,39 @@ jobs:
 #        #完成
 #      - run: echo "🍏 Linux job's status is ${{ job.status }}."
   # Windows 镜像
-  build-windows:
-    runs-on: windows-latest
-    permissions:
-      contents: write
-    steps:
-      # 3.1 签出代码
-      - uses: actions/checkout@v3
-        with:
-          ref: master
-      # 3.2 设置Flutter环境
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.22.x"
-          cache: true
-      - name: Enable Flutter Desktop
-        run: flutter config --enable-windows-desktop
-      - name: Restore Packages
-        run: flutter pub get
-      # 3.3 设置flutter_distributor环境
-      - name: Install flutter_distributor
-        run: dart pub global activate flutter_distributor
-      # 3.4 build Windows ZIP\MSIX
-      - name: Build Windows
-        run: flutter_distributor package --platform windows --targets msix,zip --skip-clean
-      # 3.5 上传ZIP\MSIX
-      - name: Upload Release
-        uses: softprops/action-gh-release@v1
-        with:
-          body_path: document/RELEASE.txt
-          token: ${{secrets.TOKEN }}
-          files: |
-            build/dist/*/*.msix
-            build/dist/*/*.zip
-        #完成
-      - run: echo "🍏 Windows job's status is ${{ job.status }}."
+#  build-windows:
+#    runs-on: windows-latest
+#    permissions:
+#      contents: write
+#    steps:
+#      # 3.1 签出代码
+#      - uses: actions/checkout@v3
+#        with:
+#          ref: master
+#      # 3.2 设置Flutter环境
+#      - name: Setup Flutter
+#        uses: subosito/flutter-action@v2
+#        with:
+#          flutter-version: "3.22.x"
+#          cache: true
+#      - name: Enable Flutter Desktop
+#        run: flutter config --enable-windows-desktop
+#      - name: Restore Packages
+#        run: flutter pub get
+#      # 3.3 设置flutter_distributor环境
+#      - name: Install flutter_distributor
+#        run: dart pub global activate flutter_distributor
+#      # 3.4 build Windows ZIP\MSIX
+#      - name: Build Windows
+#        run: flutter_distributor package --platform windows --targets msix,zip --skip-clean
+#      # 3.5 上传ZIP\MSIX
+#      - name: Upload Release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          body_path: document/RELEASE.txt
+#          token: ${{secrets.TOKEN }}
+#          files: |
+#            build/dist/*/*.msix
+#            build/dist/*/*.zip
+#        #完成
+#      - run: echo "🍏 Windows job's status is ${{ job.status }}."
