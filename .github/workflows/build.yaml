@@ -39,8 +39,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.29.3"
-          cache: false
+          flutter-version: "3.22.x"
+          cache: true
       - name: Enable Flutter Desktop
         run: flutter config --enable-macos-desktop
       # 1.4 更新Flutter的packages
