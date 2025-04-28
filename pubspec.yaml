@@ -70,7 +70,7 @@ dependencies:
   share_plus: ^10.1.4 #分享
   path_provider: ^2.1.5 #常用路径
   cross_file: ^0.3.4+2 #跨平台文件
-#  flutter_inappwebview: ^6.0.0 #WebView
+  flutter_inappwebview: ^5.7.2+3 #WebView
   permission_handler: ^11.3.1 #权限处理
 #  image_gallery_saver: ^2.0.3 #图片保存到相册
 
