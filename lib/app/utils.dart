@@ -5,6 +5,7 @@ import 'package:aivis/app/log.dart';
 import 'package:aivis/generated/locales.g.dart';
 import 'package:aivis/requests/common_request.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 // import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
@@ -44,10 +45,12 @@ class Utils {
     return dateFormatWithYear.format(dt);
   }
 
-  static String formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+  // 格式化时间
+  static String formatDuration(Duration d) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(d.inMinutes.remainder(60));
+    final seconds = twoDigits(d.inSeconds.remainder(60));
+    return '${d.inHours > 0 ? '${twoDigits(d.inHours)}:' : ''}$minutes:$seconds';
   }
 
   /// 提示弹窗
@@ -179,19 +182,18 @@ class Utils {
     var result = await Get.dialog(
       SimpleDialog(
         title: Text(title),
-        children:
-            contents
-                .map(
-                  (e) => RadioListTile<T>(
-                    title: Text(e.toString()),
-                    value: e,
-                    groupValue: value,
-                    onChanged: (e) {
-                      Get.back(result: e);
-                    },
-                  ),
-                )
-                .toList(),
+        children: contents
+            .map(
+              (e) => RadioListTile<T>(
+                title: Text(e.toString()),
+                value: e,
+                groupValue: value,
+                onChanged: (e) {
+                  Get.back(result: e);
+                },
+              ),
+            )
+            .toList(),
       ),
     );
     return result;
@@ -205,19 +207,18 @@ class Utils {
     var result = await Get.dialog(
       SimpleDialog(
         title: Text(title),
-        children:
-            contents.keys
-                .map(
-                  (e) => RadioListTile<T>(
-                    title: Text((contents[e] ?? '-').tr),
-                    value: e,
-                    groupValue: value,
-                    onChanged: (e) {
-                      Get.back(result: e);
-                    },
-                  ),
-                )
-                .toList(),
+        children: contents.keys
+            .map(
+              (e) => RadioListTile<T>(
+                title: Text((contents[e] ?? '-').tr),
+                value: e,
+                groupValue: value,
+                onChanged: (e) {
+                  Get.back(result: e);
+                },
+              ),
+            )
+            .toList(),
       ),
     );
     return result;
@@ -238,9 +239,8 @@ class Utils {
                   onTapUp: ((context, details, controllerValue) => Get.back()),
                 );
               },
-              loadingBuilder:
-                  (context, event) =>
-                      const Center(child: CircularProgressIndicator()),
+              loadingBuilder: (context, event) =>
+                  const Center(child: CircularProgressIndicator()),
               pageController: PageController(initialPage: index.value),
               onPageChanged: ((i) {
                 index.value = i;

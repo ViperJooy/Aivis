@@ -72,6 +72,7 @@ dependencies:
   cross_file: ^0.3.4+2 #跨平台文件
   flutter_inappwebview: ^6.1.5 #WebView
   permission_handler: ^11.4.0 #权限处理
+  screen_brightness: ^2.1.2 #屏幕亮度组件
 #  image_gallery_saver: ^2.0.3 #图片保存到相册
 
 

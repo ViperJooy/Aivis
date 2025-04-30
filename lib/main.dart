@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // return MaterialApp(video: GnavPage());
-    // return GetMaterialApp(home: TestPage());
+    return GetMaterialApp(home: TestPage());
     return GetMaterialApp(
       title: LocaleKeys.app_name.tr,
       onGenerateTitle: (context) => LocaleKeys.app_name.tr,
