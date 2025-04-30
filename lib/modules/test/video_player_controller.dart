@@ -52,12 +52,20 @@ class VideoPlayerController extends GetxController {
   Timer? _hideLockTimer;
 
   // 屏幕方向状态
-  final isFullScreen = false.obs;
+  final isFullScreen = true.obs;
   final systemOverlayVisible = true.obs;
 
   @override
   void onInit() {
     super.onInit();
+
+    // 进入时强制横屏
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
     player = Player();
     controller = VideoController(player, configuration: configuration.value);
     player.open(Media(Get.arguments ?? ''));
@@ -308,16 +316,16 @@ class VideoPlayerController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-    destroy();
-  }
-
-  @override
-  void dispose() {
-    destroy();
-    super.dispose();
+  // 退出播放时调用
+  Future<void> exitFullScreen() async {
+    // 恢复竖屏
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+    await SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.edgeToEdge,
+      overlays: SystemUiOverlay.values,
+    );
   }
 
   void destroy() {
@@ -331,15 +339,18 @@ class VideoPlayerController extends GetxController {
     });
     _hideUITimer?.cancel();
     _hideLockTimer?.cancel();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.edgeToEdge,
-      overlays: SystemUiOverlay.values,
-    );
+    exitFullScreen(); // 控制器关闭时恢复竖屏
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    destroy();
+  }
+
+  @override
+  void dispose() {
+    destroy();
+    super.dispose();
   }
 }

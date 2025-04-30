@@ -28,6 +28,9 @@ jobs:
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+      # 1.2 写入APIKEY
+      - name: Create APIKEY
+        run: echo "APIKEY=${{ secrets.APIKEY }}" >> assets/.env
       # 1.2 设置JAVA环境
       - name: Setup JAVA
         uses: actions/setup-java@v3

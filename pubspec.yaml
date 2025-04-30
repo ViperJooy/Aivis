@@ -73,6 +73,7 @@ dependencies:
   flutter_inappwebview: ^6.1.5 #WebView
   permission_handler: ^11.4.0 #权限处理
   screen_brightness: ^2.1.2 #屏幕亮度组件
+  flutter_dotenv: ^5.2.1 #读取.env文件
 #  image_gallery_saver: ^2.0.3 #图片保存到相册
 
 
@@ -101,6 +102,7 @@ flutter:
   assets:
     - assets/images/
     - assets/lotties/
+    - assets/.env
 
 
   # To add assets to your application, add an assets section, like this:

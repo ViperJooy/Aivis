@@ -12,6 +12,7 @@ import 'package:aivis/service/user_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
@@ -25,6 +26,8 @@ void main() async {
   await Hive.initFlutter();
   //初始化服务
   await initServices();
+  //加载.env文件
+  await dotenv.load(fileName: "assets/.env");
   //设置状态栏为透明
   SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -62,7 +65,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // return MaterialApp(video: GnavPage());
-    return GetMaterialApp(home: TestPage());
+    // return GetMaterialApp(home: TestPage());
     return GetMaterialApp(
       title: LocaleKeys.app_name.tr,
       onGenerateTitle: (context) => LocaleKeys.app_name.tr,
