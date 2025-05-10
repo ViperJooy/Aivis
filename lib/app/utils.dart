@@ -18,6 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 // ignore_for_file: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class Utils {
@@ -48,9 +49,14 @@ class Utils {
   // 格式化时间
   static String formatDuration(Duration d) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
+
+    // 计算小时、分钟和秒
+    final hours = twoDigits(d.inHours);
     final minutes = twoDigits(d.inMinutes.remainder(60));
     final seconds = twoDigits(d.inSeconds.remainder(60));
-    return '${d.inHours > 0 ? '${twoDigits(d.inHours)}:' : ''}$minutes:$seconds';
+
+    // 始终返回 HH:MM:SS 格式
+    return '$hours:$minutes:$seconds';
   }
 
   /// 提示弹窗
@@ -407,5 +413,42 @@ class Utils {
       num = num + item.padLeft(2, '0');
     }
     return int.parse(num);
+  }
+
+  static Future showBottomSheet({
+    required String title,
+    required Widget child,
+    double maxWidth = 600,
+  }) async {
+    var result = await showModalBottomSheet(
+      context: Get.context!,
+      constraints: BoxConstraints(
+        maxWidth: maxWidth,
+      ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+      ),
+      builder: (_) => Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.only(
+              left: 12,
+            ),
+            title: Text(title),
+            trailing: IconButton(
+              onPressed: Get.back,
+              icon: const Icon(Remix.close_line),
+            ),
+          ),
+          Expanded(
+            child: child,
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 }

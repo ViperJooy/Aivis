@@ -1,4 +1,6 @@
 import 'package:aivis/app/utils.dart';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -10,6 +12,15 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
 
   @override
   Widget build(BuildContext context) {
+    return PiPSwitcher(
+      floating: controller.pip,
+      childWhenDisabled: _buildPage(context),
+      childWhenEnabled: _buildMediaPlayer(context),
+    );
+  }
+
+  //页面
+  Widget _buildPage(BuildContext context) {
     return AnnotatedRegion(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -23,33 +34,30 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
           top: false,
           child: Stack(
             children: [
-              Center(
-                child: Obx(() => controller.isPortrait.value
-                    ? AspectRatio(
-                        aspectRatio: 9 / 16,
-                        child: Video(controller: controller.controller))
-                    : AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: Video(controller: controller.controller))),
-              ),
+              Obx(() => Center(
+                    child: AspectRatio(
+                      aspectRatio:
+                          controller.isPortrait.value ? 9 / 16 : 16 / 9,
+                      child: Video(controller: controller.controller),
+                    ),
+                  )),
               Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: controller.toggleControls,
                   onHorizontalDragUpdate: controller.onHorizontalDragUpdate,
                   onHorizontalDragEnd: controller.onHorizontalDragEnd,
-                  onVerticalDragStart: controller.onVerticalDragStart,
                   onVerticalDragUpdate: controller.onVerticalDragUpdate,
-                  onVerticalDragEnd: controller.onVerticalDragEnd,
                 ),
               ),
               _buildTopControls(context),
-              _buildLockButton(),
-              _buildSpeedControls(),
-              _buildBottomControls(),
+              _buildLockButton(context),
+              _buildSpeedControls(context),
+              _buildBottomControls(context),
               _buildSeekHint(),
-              _buildBrightnessHint(), // 亮度提示
-              _buildVolumeHint(), // 音量提示（后添加的会显示在上层）
+              _buildBrightnessHint(), //亮度提示
+              _buildVolumeHint(), //音量提示
+              _buildLittleProgress(context), //小进度条
             ],
           ),
         ),
@@ -57,166 +65,268 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
     );
   }
 
-  // 顶部控制栏
-  Widget _buildTopControls(BuildContext context) {
-    return Obx(() => controller.showControls.value
-        ? Positioned(
-            top: 40,
-            left: 5,
-            right: 5,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Get.back(),
-                ),
-                const Spacer(),
-                const IconButton(
-                  icon: Icon(Icons.h_plus_mobiledata, color: Colors.white),
-                  onPressed: null,
-                ),
-                IconButton(
-                  icon: Icon(Icons.screen_rotation, color: Colors.white),
-                  onPressed: controller.toggleFullScreen,
-                ),
-                const IconButton(
-                  icon: Icon(Icons.fit_screen_outlined, color: Colors.white),
-                  onPressed: null,
-                ),
-                const IconButton(
-                  icon: Icon(Icons.picture_in_picture, color: Colors.white),
-                  onPressed: null,
-                ),
-                const IconButton(
-                  icon: Icon(Icons.info_outlined, color: Colors.white),
-                  onPressed: null,
-                ),
-              ],
-            ),
-          )
-        : const SizedBox());
+  //小窗
+  Widget _buildMediaPlayer(BuildContext context) {
+    var boxFit = BoxFit.contain;
+    double? aspectRatio = 16 / 9;
+    return Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: Video(
+              controller: controller.controller, controls: null, fit: boxFit),
+        )
+      ],
+    );
   }
 
-  // 锁定按钮
-  Widget _buildLockButton() {
+  //只用来显示进度的小进度条
+  Widget _buildLittleProgress(BuildContext context) {
     return Obx(() => Positioned(
-          left: 16,
-          top: MediaQuery.of(Get.context!).size.height / 2 - 30,
-          child: Visibility(
-            visible: controller.isShowLocked.value,
-            child: IconButton(
-              icon: Icon(
-                controller.isLocked.value ? Icons.lock : Icons.lock_open,
-                color: Colors.white,
+        left: 0,
+        right: 0,
+        bottom: -1.5,
+        child: ProgressBar(
+          progress: controller.uiPosition.value,
+          buffered: controller.buffered.value,
+          total: controller.duration.value,
+          progressBarColor: Theme.of(context).colorScheme.primary,
+          baseBarColor: Colors.white.withOpacity(0.2),
+          bufferedBarColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.4),
+          timeLabelLocation: TimeLabelLocation.none,
+          thumbColor: Theme.of(context).colorScheme.primary,
+          barHeight: 3,
+          thumbRadius: 0.0,
+        )));
+  }
+
+  // 顶部控制栏
+  Widget _buildTopControls(BuildContext context) {
+    double statusBarHeight = MediaQuery.of(context).padding.top;
+    return Obx(() => AnimatedPositioned(
+        left: 0,
+        right: 0,
+        top: controller.showControls.value
+            ? statusBarHeight
+            : -(40 + statusBarHeight),
+        duration: const Duration(milliseconds: 200),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Get.back(),
+            ),
+            const Spacer(),
+            const IconButton(
+              icon: Icon(Icons.h_plus_mobiledata, color: Colors.white),
+              onPressed: null,
+            ),
+            IconButton(
+              icon: Icon(Icons.screen_rotation, color: Colors.white),
+              onPressed: controller.toggleFullScreen,
+            ),
+            const IconButton(
+              icon: Icon(Icons.fit_screen_outlined, color: Colors.white),
+              onPressed: null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_in_picture, color: Colors.white),
+              onPressed: () {
+                controller.toggleFloating();
+              },
+            ),
+            const IconButton(
+              icon: Icon(Icons.info_outlined, color: Colors.white),
+              onPressed: null,
+            ),
+          ],
+        )));
+  }
+
+  // 底部控制栏
+  Widget _buildBottomControls(BuildContext context) {
+    const TextStyle textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+
+    return Obx(() => AnimatedPositioned(
+          left: 0,
+          right: 0,
+          bottom: controller.showControls.value ? 0 : -100,
+          duration: const Duration(milliseconds: 200),
+          child: GestureDetector(
+            // 拦截横向拖动，防止滑动误触冲突
+            onHorizontalDragStart: (_) {},
+            onHorizontalDragUpdate: (_) {},
+            onHorizontalDragEnd: (_) {},
+            behavior: HitTestBehavior.opaque, // 确保区域点击有效
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      ///时间文本
+                      SizedBox(
+                          width: 140,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                Utils.formatDuration(
+                                    controller.uiPosition.value),
+                                style: textStyle,
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4),
+                                child: Text("/", style: textStyle),
+                              ),
+                              // 优化：使用Expanded让文本自动换行或截断
+                              Text(
+                                Utils.formatDuration(controller.duration.value),
+                                style: textStyle,
+                              ),
+                            ],
+                          )),
+
+                      ///可操控的进度条
+                      Expanded(
+                        child: ProgressBar(
+                          progress: controller.uiPosition.value,
+                          buffered: controller.buffered.value,
+                          total: controller.duration.value,
+                          progressBarColor: Colors.red,
+                          baseBarColor: Colors.white.withOpacity(0.2),
+                          bufferedBarColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.4),
+                          barHeight: 5,
+                          timeLabelLocation: TimeLabelLocation.none,
+                          thumbColor: Colors.grey,
+                          thumbCanPaintOutsideBar: false,
+                          thumbRadius: 10,
+                          onDragStart: (duration) {
+                            controller.onDragStart();
+                          },
+                          onDragUpdate: (duration) {},
+                          onDragEnd: () {
+                            controller.onDragEnd();
+                          },
+                          onSeek: (duration) {
+                            controller.seekTo(duration);
+                          },
+                        ),
+                        // child: Slider(
+                        //   value: controller.uiPosition.value.inSeconds.toDouble(),
+                        //   min: 0.0,
+                        //   max: controller.duration.value.inSeconds
+                        //       .toDouble()
+                        //       .clamp(1, double.infinity),
+                        //   onChangeStart: (value) => controller.startDragging(),
+                        //   onChanged: (value) =>
+                        //       controller.updateDraggingPosition(value.seconds),
+                        //   onChangeEnd: (value) => controller.stopDragging(value),
+                        //   activeColor: Colors.red,
+                        //   inactiveColor: Colors.grey.shade800,
+                        //   thumbColor: Colors.white,
+                        // ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          controller.isPlaying.value
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                        onPressed: controller.togglePlay,
+                      ),
+                      const Row(
+                        children: [
+                          Icon(Icons.music_note, color: Colors.white),
+                          SizedBox(width: 16),
+                          Icon(Icons.closed_caption, color: Colors.white),
+                        ],
+                      ),
+                    ],
+                  )
+                ],
               ),
-              onPressed: controller.toggleLock,
             ),
           ),
         ));
   }
 
-  // 速度控制
-  Widget _buildSpeedControls() {
-    return Obx(() => controller.showControls.value
-        ? Positioned(
-            right: 16,
-            top: MediaQuery.of(Get.context!).size.height / 2 - 60,
-            child: Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  onPressed: controller.increaseSpeed,
-                ),
-                Text(
-                  '${controller.playbackSpeed.value.toStringAsFixed(1)}x',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.remove, color: Colors.white),
-                  onPressed: controller.decreaseSpeed,
-                ),
-              ],
-            ),
-          )
-        : const SizedBox());
+  // 左侧锁定按钮
+  Widget _buildLockButton(BuildContext context) {
+    var padding = MediaQuery.of(context).padding;
+    var screenHeight = MediaQuery.of(context).size.height;
+    double topValue = screenHeight / 2 - padding.top;
+
+    return Obx(() => AnimatedPositioned(
+        top: topValue,
+        left:
+            controller.isShowLocked.value ? padding.left : -(50 + padding.left),
+        duration: const Duration(milliseconds: 200),
+        child: IconButton(
+          icon: Icon(
+            controller.isLocked.value ? Icons.lock : Icons.lock_open,
+            color: Colors.white,
+          ),
+          onPressed: controller.toggleLock,
+        )));
   }
 
-  // 底部控制栏
-  Widget _buildBottomControls() {
-    return Obx(() => controller.showControls.value
-        ? Positioned(
-            left: 5,
-            right: 5,
-            bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: SizedBox(
-                        width: 90,
-                        child: Text(
-                          '${Utils.formatDuration(controller.uiPosition.value)} / ${Utils.formatDuration(controller.duration.value)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        value: controller.uiPosition.value.inSeconds.toDouble(),
-                        min: 0.0,
-                        max: controller.duration.value.inSeconds
-                            .toDouble()
-                            .clamp(1, double.infinity),
-                        onChangeStart: (value) => controller.startDragging(),
-                        onChanged: (value) =>
-                            controller.updateDraggingPosition(value),
-                        onChangeEnd: (value) => controller.stopDragging(value),
-                        activeColor: Colors.red,
-                        inactiveColor: Colors.grey.shade800,
-                        thumbColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        controller.isPlaying.value
-                            ? Icons.pause
-                            : Icons.play_arrow,
-                        color: Colors.white,
-                      ),
-                      onPressed: controller.togglePlay,
-                    ),
-                    const Row(
-                      children: [
-                        Icon(Icons.music_note, color: Colors.white),
-                        SizedBox(width: 20),
-                        Icon(Icons.closed_caption, color: Colors.white),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          )
-        : const SizedBox());
+  // 右侧速度控制
+  Widget _buildSpeedControls(BuildContext context) {
+    var padding = MediaQuery.of(context).padding;
+    var screenHeight = MediaQuery.of(context).size.height;
+    // 假设控件高度为50，根据实际情况调整
+    double controlHeight = 50;
+    // 计算垂直居中的top值
+    double topValue = (screenHeight - controlHeight) / 2 - padding.top;
+
+    return Obx(() => AnimatedPositioned(
+        top: topValue,
+        bottom: 0,
+        right: controller.isShowLocked.value
+            ? padding.right
+            : -(50 + padding.right),
+        duration: const Duration(milliseconds: 200),
+        child: SizedBox(
+          height: 50,
+          child: Column(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add, color: Colors.white),
+                onPressed: controller.increaseSpeed,
+              ),
+              Text(
+                '${controller.playbackSpeed.value.toStringAsFixed(1)}x',
+                style: const TextStyle(color: Colors.white),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove, color: Colors.white),
+                onPressed: controller.decreaseSpeed,
+              ),
+            ],
+          ),
+        )));
   }
 
   // 进度提示
   Widget _buildSeekHint() {
     return Obx(() => controller.showSeekHint.value
         ? Positioned(
-            top: 100,
+            top: 50,
             left: 0,
             right: 0,
             child: Center(
@@ -254,32 +364,36 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
         : const SizedBox());
   }
 
-  // 亮度提示组件
+  // 竖向手势亮度提示组件
   Widget _buildBrightnessHint() {
-    return Obx(() => controller.showBrightnessHint.value
-        ? Positioned(
-            child: _buildControlHint(
-              icon: _getBrightnessIcon(controller.brightnessLevel.value),
-              value: controller.brightnessLevel.value,
-              label: '亮度',
-            ),
-          )
-        : const SizedBox());
+    return Obx(
+      () => Offstage(
+        offstage: !controller.brightnessIndicator.value,
+        child: _buildControlHint(
+            icon: controller.brightnessValue.value < 0.33
+                ? Icons.brightness_low
+                : controller.brightnessValue.value < 0.66
+                    ? Icons.brightness_medium
+                    : Icons.brightness_high,
+            value: controller.brightnessValue.value,
+            label: "亮度"),
+      ),
+    );
   }
 
-// 音量提示组件
+  // 竖向手势声音提示组件
   Widget _buildVolumeHint() {
-    return Obx(() => controller.showVolumeHint.value
-        ? Positioned(
-            child: _buildControlHint(
-              icon: controller.volumeLevel.value > 0
-                  ? Icons.volume_up
-                  : Icons.volume_off,
-              value: controller.volumeLevel.value,
-              label: '音量',
-            ),
-          )
-        : const SizedBox());
+    return Obx(() => Offstage(
+          offstage: !controller.volumeIndicator.value,
+          child: _buildControlHint(
+              icon: controller.volumeValue.value == 0.0
+                  ? Icons.volume_off
+                  : controller.volumeValue.value < 0.5
+                      ? Icons.volume_down
+                      : Icons.volume_up,
+              value: controller.volumeValue.value,
+              label: "音量"),
+        ));
   }
 
   // 通用提示组件
@@ -288,54 +402,45 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
     required double value,
     required String label,
   }) {
-    return Positioned(
-      top: 150,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: const TextStyle(color: Colors.white)),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: Colors.white),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: 120,
-                    child: LinearProgressIndicator(
-                      borderRadius: BorderRadius.circular(8),
-                      value: value,
-                      backgroundColor: Colors.grey,
-                      valueColor:
-                          const AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        margin: EdgeInsets.only(top: 50),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 120,
+                  child: LinearProgressIndicator(
+                    borderRadius: BorderRadius.circular(8),
+                    value: value,
+                    backgroundColor: Colors.grey,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    "${(value * 100).toInt()}%",
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  "${(value * 100).toInt()}%",
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  IconData _getBrightnessIcon(double level) {
-    if (level < 0.33) return Icons.brightness_low;
-    if (level < 0.66) return Icons.brightness_medium;
-    return Icons.brightness_high;
   }
 }

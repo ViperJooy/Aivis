@@ -1,14 +1,27 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:aivis/app/utils.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fullscreen_window/fullscreen_window.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
+import 'package:volume_controller/volume_controller.dart';
 
-final configuration = ValueNotifier<VideoControllerConfiguration>(
+import '../../app/easy_throttle.dart';
+import '../../app/log.dart';
+
+///播放器配置
+final videoControllerConfiguration =
+    ValueNotifier<VideoControllerConfiguration>(
   const VideoControllerConfiguration(enableHardwareAcceleration: true),
+);
+
+final playerConfiguration = ValueNotifier<PlayerConfiguration>(
+  const PlayerConfiguration(bufferSize: 500 * 1024 * 1024),
 );
 
 class VideoPlayerController extends GetxController {
@@ -17,85 +30,70 @@ class VideoPlayerController extends GetxController {
   late final VideoController controller;
 
   // 播放状态
-  final isPlaying = false.obs;
-  final position = Duration.zero.obs;
-  final duration = const Duration(seconds: 1).obs;
-  final isLocked = false.obs;
-  final isShowLocked = true.obs;
-  final showControls = true.obs;
-  final playbackSpeed = 1.0.obs;
-  final isPortrait = false.obs;
+  final Duration controlCancelTime = Duration(seconds: 5); //通用control显示时间
+  RxBool isPlaying = false.obs;
+  Rx<Duration> position = Duration.zero.obs;
+  Rx<Duration> duration = const Duration(seconds: 1).obs;
+  Rx<Duration> buffered = const Duration(seconds: 1).obs;
+  RxBool isLocked = false.obs;
+  RxBool isShowLocked = true.obs;
+  RxBool showControls = true.obs;
+  RxDouble playbackSpeed = 1.0.obs;
+  RxBool isPortrait = false.obs;
+  RxBool isFullScreen = false.obs; //全屏状态
 
-  // 进度控制
   double _dragDelta = 0;
-  bool isSeekDragging = false;
-  final showSeekHint = false.obs;
-  final seekHintPosition = ''.obs;
-  final dragPosition = Duration.zero.obs;
-  final uiPosition = Duration.zero.obs;
+  bool isSliderDragging = false;
+  RxBool showSeekHint = false.obs;
+  RxString seekHintPosition = ''.obs;
+  Rx<Duration> dragPosition = Duration.zero.obs;
+  Rx<Duration> uiPosition = Duration.zero.obs;
 
   // 亮度控制
-  final brightnessLevel = 0.5.obs;
-  final showBrightnessHint = false.obs;
-  double _initialBrightness = 0.5;
-  double _brightnessDragDistance = 0.0;
-  Timer? _brightnessHideTimer;
+  final RxBool brightnessIndicator = false.obs;
+  Timer? _brightnessTimer;
+  final brightnessValue = 0.5.obs;
 
   // 音量控制
-  final volumeLevel = 0.5.obs;
-  final showVolumeHint = false.obs;
-  double _initialVolume = 0.5;
-  double _volumeDragDistance = 0.0;
-  Timer? _volumeHideTimer;
+  final RxBool volumeIndicator = false.obs;
+  Timer? _volumeTimer;
+  final volumeValue = 0.0.obs;
 
   Timer? _hideUITimer;
   Timer? _hideLockTimer;
 
-  // 屏幕方向状态
-  final isFullScreen = true.obs;
-  final systemOverlayVisible = true.obs;
+  late Floating pip;
+  RxBool isPip = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-
-    // 进入时强制横屏
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-    player = Player();
-    controller = VideoController(player, configuration: configuration.value);
+    player = Player(configuration: playerConfiguration.value);
+    controller = VideoController(player,
+        configuration: videoControllerConfiguration.value);
     player.open(Media(Get.arguments ?? ''));
+    if (Platform.isAndroid) {
+      pip = Floating();
+    }
+    initListener();
+  }
 
-    player.stream.width.listen((width) {
-      player.stream.height.listen((height) {
-        if (width != null && height != null) {
-          isPortrait.value = width < height;
-        }
-      });
+  void destroy() {
+    player.dispose();
+    Future.microtask(() async {
+      try {
+        await ScreenBrightness.instance.resetApplicationScreenBrightness();
+      } catch (_) {}
     });
+    _hideUITimer?.cancel();
+    _hideLockTimer?.cancel();
+  }
 
-    player.stream.playing.listen((event) {
-      isPlaying.value = event;
-      if (event) {
-        _startHideUITimer();
-        _startHideLockTimer();
-      }
-    });
-
-    player.stream.position.listen((event) {
-      if (!isSeekDragging) {
-        position.value = event;
-        uiPosition.value = event;
-      }
-    });
-
-    player.stream.duration.listen((event) {
-      duration.value = event;
-    });
+  @override
+  void onClose() {
+    destroy();
+    _exitFullScreen(); // 离开页面时恢复
+    super.onClose();
   }
 
   // 播放控制
@@ -124,26 +122,57 @@ class VideoPlayerController extends GetxController {
     _startHideLockTimer();
   }
 
-  // 进度控制
-  void onSeek(double seconds) {
-    final d = Duration(seconds: seconds.toInt());
-    player.seek(d);
-    dragPosition.value = d;
+  void toggleFullScreen() {
+    isFullScreen.value = !isFullScreen.value;
+    isFullScreen.value ? _enterFullScreen() : _exitFullScreen();
   }
 
+  void _enterFullScreen() {
+    FullScreenWindow.setFullScreen(true);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  void _exitFullScreen() {
+    FullScreenWindow.setFullScreen(false);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  }
+
+  //开始拖动进度条
+  void onDragStart() {
+    _hideUITimer?.cancel();
+  }
+
+  //结束拖动进度条
+  void onDragEnd() {
+    _startHideUITimer();
+    _startHideLockTimer();
+  }
+
+  // 进度控制
+  void seekTo(Duration duration) {
+    player.seek(duration);
+  }
+
+  //横屏滑动视频进度
   void onHorizontalDragUpdate(DragUpdateDetails details) {
     if (isLocked.value) return;
 
-    isSeekDragging = true;
+    isSliderDragging = true;
+    //滑动的时候ui不隐藏
     showControls.value = false;
     isShowLocked.value = false;
-
-    _dragDelta += details.primaryDelta ?? 0;
 
     final screenWidth = MediaQuery.of(Get.context!).size.width;
     final totalSeconds = duration.value.inSeconds.clamp(1, double.infinity);
     final secondsPerPixel = totalSeconds / screenWidth;
-
+    _dragDelta += details.primaryDelta ?? 0;
     final offsetSeconds = (_dragDelta * secondsPerPixel).round();
     if (offsetSeconds == 0) return;
 
@@ -162,7 +191,7 @@ class VideoPlayerController extends GetxController {
   void onHorizontalDragEnd(DragEndDetails details) {
     if (isLocked.value) return;
 
-    isSeekDragging = false;
+    isSliderDragging = false;
     player.seek(dragPosition.value);
     position.value = dragPosition.value;
     uiPosition.value = dragPosition.value;
@@ -173,19 +202,18 @@ class VideoPlayerController extends GetxController {
     });
   }
 
-  void startDragging() => isSeekDragging = true;
+  void startDragging() => isSliderDragging = true;
 
-  void updateDraggingPosition(double seconds) {
-    final d = Duration(seconds: seconds.toInt());
-    dragPosition.value = d;
-    uiPosition.value = d;
+  void updateDraggingPosition(Duration duration) {
+    dragPosition.value = duration;
+    uiPosition.value = duration;
     seekHintPosition.value =
-        '${Utils.formatDuration(d)} / ${Utils.formatDuration(duration.value)}';
+        '${Utils.formatDuration(duration)} / ${Utils.formatDuration(duration)}';
     showSeekHint.value = true;
   }
 
   void stopDragging(double seconds) {
-    isSeekDragging = false;
+    isSliderDragging = false;
     final d = Duration(seconds: seconds.toInt());
     player.seek(d);
     position.value = d;
@@ -195,162 +223,158 @@ class VideoPlayerController extends GetxController {
         const Duration(seconds: 1), () => showSeekHint.value = false);
   }
 
-  // 亮度/音量控制
-  void onVerticalDragStart(DragStartDetails details) async {
-    if (isLocked.value) return;
-
-    final screenWidth = MediaQuery.of(Get.context!).size.width;
-    final isLeftSide = details.globalPosition.dx < screenWidth / 2;
-
-    // 取消之前的隐藏计时器
-    _brightnessHideTimer?.cancel();
-    _volumeHideTimer?.cancel();
-
-    if (isLeftSide) {
-      showVolumeHint.value = false; // 立即隐藏音量提示
-      showBrightnessHint.value = true;
-      try {
-        _initialBrightness = await ScreenBrightness.instance.application;
-        brightnessLevel.value = _initialBrightness;
-      } catch (e) {
-        _initialBrightness = 0.5;
-        brightnessLevel.value = 0.5;
-      }
-      _brightnessDragDistance = 0.0;
-    } else {
-      showBrightnessHint.value = false; // 立即隐藏亮度提示
-      showVolumeHint.value = true;
-      _initialVolume = player.state.volume / 100;
-      volumeLevel.value = _initialVolume;
-      _volumeDragDistance = 0.0;
-    }
-  }
-
+  //竖向手势操作，亮度/音量
   void onVerticalDragUpdate(DragUpdateDetails details) async {
+    final double widgetWidth = MediaQuery.sizeOf(Get.context!).width;
+    final double delta = details.delta.dy;
+    final Offset position = details.localPosition;
+
+    /// 锁定时禁用
     if (isLocked.value) return;
-
-    final delta = -details.delta.dy;
-    final screenHeight = MediaQuery.of(Get.context!).size.height;
-
-    if (showBrightnessHint.value) {
-      _brightnessDragDistance += delta;
-      final change = _brightnessDragDistance / screenHeight;
-
-      double newValue = (_initialBrightness + change).clamp(0.0, 1.0);
-      brightnessLevel.value = newValue;
-      await ScreenBrightness.instance.setApplicationScreenBrightness(newValue);
-    }
-
-    if (showVolumeHint.value) {
-      _volumeDragDistance += delta;
-      final change = _volumeDragDistance / screenHeight;
-
-      double newValue = (_initialVolume + change).clamp(0.0, 1.0);
-      volumeLevel.value = newValue;
-      player.setVolume(newValue * 100);
-    }
-  }
-
-  void onVerticalDragEnd(DragEndDetails details) {
-    if (showBrightnessHint.value) {
-      _brightnessHideTimer = Timer(const Duration(seconds: 1), () {
-        showBrightnessHint.value = false;
-      });
-    }
-
-    if (showVolumeHint.value) {
-      _volumeHideTimer = Timer(const Duration(seconds: 1), () {
-        showVolumeHint.value = false;
+    if (position.dx <= widgetWidth / 2) {
+      // 左边区域 👈
+      final double level =
+          (isFullScreen.value ? Get.size.height : Get.size.width * 9 / 16) * 3;
+      final double brightness = brightnessValue.value - delta / level;
+      final double result = brightness.clamp(0.0, 1.0);
+      setBrightness(result);
+    } else {
+      // 右边区域 👈
+      EasyThrottle.throttle('setVolume', const Duration(milliseconds: 30), () {
+        final double level =
+            (isFullScreen.value ? Get.size.height : Get.size.width * 9 / 16);
+        // 音量调节 - 使用动态灵敏度因子
+        final double clampedVolume =
+            (volumeValue.value - (delta / level) * 0.8).clamp(0.0, 1.0);
+        // 更新音量
+        setVolume(clampedVolume);
       });
     }
   }
 
-  // 其他功能
+  Future<void> setVolume(double value) async {
+    //此时如果正在显示亮度提示组件这里应该立即隐藏
+    brightnessIndicator.value = false;
+    showControls.value = false;
+    isShowLocked.value = false;
+
+    try {
+      VolumeController.instance.showSystemUI = false;
+      await VolumeController.instance.setVolume(value);
+    } catch (_) {}
+    volumeValue.value = value;
+    volumeIndicator.value = true;
+    _volumeTimer?.cancel();
+    _volumeTimer = Timer(const Duration(seconds: 1), () {
+      volumeIndicator.value = false;
+    });
+  }
+
+  Future<void> setBrightness(double value) async {
+    //此时如果正在显示声音提示组件这里应该立即隐藏
+    isShowLocked.value = false;
+    volumeIndicator.value = false;
+    showControls.value = false;
+
+    try {
+      await ScreenBrightness().setApplicationScreenBrightness(value);
+    } catch (_) {}
+    brightnessIndicator.value = true;
+    _brightnessTimer?.cancel();
+    _brightnessTimer = Timer(const Duration(seconds: 1), () {
+      brightnessIndicator.value = false;
+    });
+  }
+
+  // 设置倍速
   void increaseSpeed() {
     playbackSpeed.value = (playbackSpeed.value + 0.1).clamp(0.5, 2.0);
     player.setRate(playbackSpeed.value);
   }
 
+  // 设置倍速
   void decreaseSpeed() {
     playbackSpeed.value = (playbackSpeed.value - 0.1).clamp(0.5, 2.0);
     player.setRate(playbackSpeed.value);
   }
 
-  // 辅助方法
+  // 隐藏ui
   void _startHideUITimer() {
     _hideUITimer?.cancel();
-    _hideUITimer = Timer(const Duration(seconds: 5), () {
+    _hideUITimer = Timer(controlCancelTime, () {
       showControls.value = false;
     });
   }
 
+  //隐藏lock
   void _startHideLockTimer() {
     _hideLockTimer?.cancel();
-    _hideLockTimer = Timer(const Duration(seconds: 5), () {
+    _hideLockTimer = Timer(controlCancelTime, () {
       isShowLocked.value = false;
     });
   }
 
-  // 切换横竖屏
-  void toggleFullScreen() {
-    isFullScreen.toggle();
-    systemOverlayVisible.value = !isFullScreen.value;
+  //初始化播放器监听
+  void initListener() {
+    player.stream.width.listen((width) {
+      player.stream.height.listen((height) {
+        if (width != null && height != null) {
+          isPortrait.value = width < height;
+        }
+      });
+    });
 
-    if (isFullScreen.value) {
-      // 横屏
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
-      // 竖屏
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.edgeToEdge,
-        overlays: SystemUiOverlay.values,
-      );
-    }
-  }
+    player.stream.playing.listen((event) {
+      isPlaying.value = event;
+      if (event) {
+        _startHideUITimer();
+        _startHideLockTimer();
+      }
+    });
 
-  // 退出播放时调用
-  Future<void> exitFullScreen() async {
-    // 恢复竖屏
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-    await SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.edgeToEdge,
-      overlays: SystemUiOverlay.values,
-    );
-  }
+    player.stream.position.listen((event) {
+      if (!isSliderDragging) {
+        position.value = event;
+        uiPosition.value = event;
+      }
+    });
 
-  void destroy() {
-    player.dispose();
-    _brightnessHideTimer?.cancel();
-    _volumeHideTimer?.cancel();
+    player.stream.duration.listen((event) {
+      if (event > Duration.zero) {
+        duration.value = event;
+      }
+    });
+
+    player.stream.buffer.listen((event) {
+      buffered.value = event;
+    });
+
+    // player.stream.buffering.listen((event) {
+    //   isBuffering.value = event;
+    // });
+
     Future.microtask(() async {
       try {
-        await ScreenBrightness.instance.resetApplicationScreenBrightness();
+        brightnessValue.value = await ScreenBrightness.instance.application;
+        ScreenBrightness.instance.onApplicationScreenBrightnessChanged
+            .listen((double value) {
+          brightnessValue.value = value;
+        });
       } catch (_) {}
     });
-    _hideUITimer?.cancel();
-    _hideLockTimer?.cancel();
-    exitFullScreen(); // 控制器关闭时恢复竖屏
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-    destroy();
-  }
+  void toggleFloating() async {
+    showControls.value = false;
+    isShowLocked.value = false;
 
-  @override
-  void dispose() {
-    destroy();
-    super.dispose();
+    final isAvailable = await pip.isPipAvailable;
+    if (isAvailable) {
+      await pip.enable(ImmediatePiP());
+    } else {
+      ScaffoldMessenger.of(Get.context!).showSnackBar(
+        const SnackBar(content: Text('当前设备不支持画中画模式')),
+      );
+    }
   }
 }

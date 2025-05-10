@@ -47,6 +47,11 @@ android {
         versionName = flutterVersionName   // ✅ 修复这里
     }
 
+    packagingOptions {
+        pickFirst("lib/**/libc++_shared.so")
+    }
+
+
     signingConfigs {
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String?
