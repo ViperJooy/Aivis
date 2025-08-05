@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:aivis/app/log.dart';
 import 'package:aivis/app/utils.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:floating/floating.dart';
@@ -12,6 +15,9 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Platform.isAndroid) {
+      return _buildPage(context);
+    }
     return PiPSwitcher(
       floating: controller.pip,
       childWhenDisabled: _buildPage(context),
@@ -21,95 +27,96 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
 
   //页面
   Widget _buildPage(BuildContext context) {
-    return AnnotatedRegion(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        systemNavigationBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          top: false,
-          child: Stack(
-            children: [
-              Obx(() => Center(
-                    child: AspectRatio(
-                      aspectRatio:
-                          controller.isPortrait.value ? 9 / 16 : 16 / 9,
-                      child: Video(controller: controller.controller),
+    return Scaffold(
+      extendBodyBehindAppBar: true, // 让 body 延伸到状态栏区域
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        // top: false,
+        child: Stack(
+          children: [
+            Obx(() => Center(
+                  child: Video(
+                    fit: BoxFit.contain,
+                    aspectRatio: controller.aspectRatio.value,
+                    controller: controller.controller,
+                    subtitleViewConfiguration: SubtitleViewConfiguration(
+                      style: TextStyle(
+                        height: 1.4,
+                        fontSize: 48.0,
+                        letterSpacing: 0.0,
+                        wordSpacing: 0.0,
+                        color: Colors.white,
+                        fontWeight: FontWeight.normal,
+                        // backgroundColor: Color(0xaa000000),
+                      ),
+                      textAlign: TextAlign.center,
+                      padding: EdgeInsets.all(24.0),
                     ),
-                  )),
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: controller.toggleControls,
-                  onHorizontalDragUpdate: controller.onHorizontalDragUpdate,
-                  onHorizontalDragEnd: controller.onHorizontalDragEnd,
-                  onVerticalDragUpdate: controller.onVerticalDragUpdate,
-                ),
+                    controls: NoVideoControls,
+                  ),
+                )),
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: controller.toggleControls,
+                onDoubleTap: controller.toggleFullScreen,
+                onHorizontalDragUpdate: controller.onHorizontalDragUpdate,
+                onHorizontalDragEnd: controller.onHorizontalDragEnd,
+                onVerticalDragUpdate: controller.onVerticalDragUpdate,
               ),
-              _buildTopControls(context),
-              _buildLockButton(context),
-              _buildSpeedControls(context),
-              _buildBottomControls(context),
-              _buildSeekHint(),
-              _buildBrightnessHint(), //亮度提示
-              _buildVolumeHint(), //音量提示
-              _buildLittleProgress(context), //小进度条
-            ],
-          ),
+            ),
+            _buildCircularProgressIndicator(), //加载进度及播放错误提示
+            _buildTopControls(context), //顶部控制栏
+            _buildLockButton(context), //左侧锁定按钮
+            _buildSpeedControls(context), //右侧速度控制
+            _buildBottomControls(context), //底部控制栏
+            _buildSeekHint(), //进度提示
+            _buildBrightnessHint(), //亮度提示
+            _buildVolumeHint(), //音量提示
+            _buildLittleProgress(context) //只用来显示进度的小进度条
+          ],
         ),
       ),
     );
   }
 
-  //小窗
-  Widget _buildMediaPlayer(BuildContext context) {
-    var boxFit = BoxFit.contain;
-    double? aspectRatio = 16 / 9;
-    return Stack(
-      children: [
-        AspectRatio(
-          aspectRatio: aspectRatio,
-          child: Video(
-              controller: controller.controller, controls: null, fit: boxFit),
-        )
-      ],
-    );
-  }
-
-  //只用来显示进度的小进度条
-  Widget _buildLittleProgress(BuildContext context) {
-    return Obx(() => Positioned(
-        left: 0,
-        right: 0,
-        bottom: -1.5,
-        child: ProgressBar(
-          progress: controller.uiPosition.value,
-          buffered: controller.buffered.value,
-          total: controller.duration.value,
-          progressBarColor: Theme.of(context).colorScheme.primary,
-          baseBarColor: Colors.white.withOpacity(0.2),
-          bufferedBarColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.4),
-          timeLabelLocation: TimeLabelLocation.none,
-          thumbColor: Theme.of(context).colorScheme.primary,
-          barHeight: 3,
-          thumbRadius: 0.0,
-        )));
+  // 播放错误提示
+  Widget _buildCircularProgressIndicator() {
+    return Positioned(
+        child: Center(
+            child: StreamBuilder(
+      stream: controller.controller.player.stream.buffering,
+      initialData: controller.controller.player.state.buffering,
+      builder: (_, s) => Visibility(
+        visible: s.data ?? false,
+        child: Center(
+          child: Obx(
+            () => controller.error.value
+                ? Text(
+                    controller.errorMsg.value,
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  )
+                : const CircularProgressIndicator(),
+          ),
+        ),
+      ),
+    )));
   }
 
   // 顶部控制栏
   Widget _buildTopControls(BuildContext context) {
     double statusBarHeight = MediaQuery.of(context).padding.top;
+    Log.i("statusBarHeight: $statusBarHeight");
+
     return Obx(() => AnimatedPositioned(
         left: 0,
         right: 0,
-        top: controller.showControls.value
-            ? statusBarHeight
-            : -(40 + statusBarHeight),
+        top: controller.showControls.value ? 0 : -48,
+        // top: controller.showControls.value
+        //     ? statusBarHeight
+        //     : -(40 + statusBarHeight),
         duration: const Duration(milliseconds: 200),
         child: Row(
           children: [
@@ -141,6 +148,62 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
               onPressed: null,
             ),
           ],
+        )));
+  }
+
+  // 左侧锁定按钮
+  Widget _buildLockButton(BuildContext context) {
+    var padding = MediaQuery.of(context).padding;
+    var screenHeight = MediaQuery.of(context).size.height;
+    double topValue = screenHeight / 2 - padding.top;
+
+    return Obx(() => AnimatedPositioned(
+        top: topValue,
+        left:
+            controller.isShowLocked.value ? padding.left : -(50 + padding.left),
+        duration: const Duration(milliseconds: 200),
+        child: IconButton(
+          icon: Icon(
+            controller.isLocked.value ? Icons.lock : Icons.lock_open,
+            color: Colors.white,
+          ),
+          onPressed: controller.toggleLock,
+        )));
+  }
+
+  // 右侧速度控制
+  Widget _buildSpeedControls(BuildContext context) {
+    var padding = MediaQuery.of(context).padding;
+    var screenHeight = MediaQuery.of(context).size.height;
+    // 假设控件高度为50，根据实际情况调整
+    double controlHeight = 50;
+    // 计算垂直居中的top值
+    double topValue = (screenHeight - controlHeight) / 2 - padding.top;
+
+    return Obx(() => AnimatedPositioned(
+        top: topValue,
+        bottom: 0,
+        right: controller.showControls.value
+            ? padding.right
+            : -(50 + padding.right),
+        duration: const Duration(milliseconds: 200),
+        child: SizedBox(
+          child: Column(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add, color: Colors.white),
+                onPressed: controller.increaseSpeed,
+              ),
+              Text(
+                '${controller.playbackSpeed.value.toStringAsFixed(1)}x',
+                style: const TextStyle(color: Colors.white),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove, color: Colors.white),
+                onPressed: controller.decreaseSpeed,
+              ),
+            ],
+          ),
         )));
   }
 
@@ -242,7 +305,7 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
                     children: [
                       IconButton(
                         icon: Icon(
-                          controller.isPlaying.value
+                          controller.playing.value
                               ? Icons.pause
                               : Icons.play_arrow,
                           color: Colors.white,
@@ -265,60 +328,39 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
         ));
   }
 
-  // 左侧锁定按钮
-  Widget _buildLockButton(BuildContext context) {
-    var padding = MediaQuery.of(context).padding;
-    var screenHeight = MediaQuery.of(context).size.height;
-    double topValue = screenHeight / 2 - padding.top;
-
-    return Obx(() => AnimatedPositioned(
-        top: topValue,
-        left:
-            controller.isShowLocked.value ? padding.left : -(50 + padding.left),
-        duration: const Duration(milliseconds: 200),
-        child: IconButton(
-          icon: Icon(
-            controller.isLocked.value ? Icons.lock : Icons.lock_open,
-            color: Colors.white,
-          ),
-          onPressed: controller.toggleLock,
-        )));
+  //小窗
+  Widget _buildMediaPlayer(BuildContext context) {
+    var boxFit = BoxFit.contain;
+    double? aspectRatio = 16 / 9;
+    return Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: aspectRatio,
+          child: Video(
+              controller: controller.controller, controls: null, fit: boxFit),
+        )
+      ],
+    );
   }
 
-  // 右侧速度控制
-  Widget _buildSpeedControls(BuildContext context) {
-    var padding = MediaQuery.of(context).padding;
-    var screenHeight = MediaQuery.of(context).size.height;
-    // 假设控件高度为50，根据实际情况调整
-    double controlHeight = 50;
-    // 计算垂直居中的top值
-    double topValue = (screenHeight - controlHeight) / 2 - padding.top;
-
-    return Obx(() => AnimatedPositioned(
-        top: topValue,
-        bottom: 0,
-        right: controller.isShowLocked.value
-            ? padding.right
-            : -(50 + padding.right),
-        duration: const Duration(milliseconds: 200),
-        child: SizedBox(
-          height: 50,
-          child: Column(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.add, color: Colors.white),
-                onPressed: controller.increaseSpeed,
-              ),
-              Text(
-                '${controller.playbackSpeed.value.toStringAsFixed(1)}x',
-                style: const TextStyle(color: Colors.white),
-              ),
-              IconButton(
-                icon: const Icon(Icons.remove, color: Colors.white),
-                onPressed: controller.decreaseSpeed,
-              ),
-            ],
-          ),
+  // 只用来显示进度的小进度条
+  Widget _buildLittleProgress(BuildContext context) {
+    return Obx(() => Positioned(
+        left: 0,
+        right: 0,
+        bottom: -1.5,
+        child: ProgressBar(
+          progress: controller.uiPosition.value,
+          buffered: controller.buffered.value,
+          total: controller.duration.value,
+          progressBarColor: Theme.of(context).colorScheme.primary,
+          baseBarColor: Colors.white.withOpacity(0.2),
+          bufferedBarColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.4),
+          timeLabelLocation: TimeLabelLocation.none,
+          thumbColor: Theme.of(context).colorScheme.primary,
+          barHeight: 3,
+          thumbRadius: 0.0,
         )));
   }
 

@@ -1,19 +1,18 @@
 import 'dart:math';
 
 import 'package:aivis/app/app_style.dart';
-import 'package:aivis/modules/video/videos_list_controller.dart';
-import 'package:aivis/widgets/items/video_item_widget.dart';
+import 'package:aivis/modules/indexed/douban/top250_list_controller.dart';
+import 'package:aivis/widgets/items/top250_item_widget.dart';
 import 'package:aivis/widgets/keep_alive_wrapper.dart';
+import 'package:aivis/widgets/page_grid_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../widgets/page_grid_view.dart';
-
-class VideosListView extends StatelessWidget {
+class Top250ListView extends StatelessWidget {
   final String tag;
-  const VideosListView(this.tag, {super.key});
-  VideosListController get controller =>
-      Get.find<VideosListController>(tag: tag);
+  const Top250ListView(this.tag, {super.key});
+  Top250ListController get controller =>
+      Get.find<Top250ListController>(tag: tag);
   @override
   Widget build(BuildContext context) {
     final double minItemWidth = 200; // 最小 item 宽度
@@ -33,9 +32,12 @@ class VideosListView extends StatelessWidget {
         crossAxisCount: column,
         itemBuilder: (_, i) {
           var item = controller.list[i];
+          // 自动计算显示高度，保持宽高比
+          // final itemHeight =
+          //     itemWidth * ((item.height ?? 640) / (item.width ?? 360));
           final itemHeight =
-              itemWidth * ((item.height ?? 640) / (item.width ?? 360));
-          return VideoItemWidget(item, itemWidth, itemHeight);
+              itemWidth * (640/360);
+          return Top250ItemWidget(item, itemWidth, itemHeight);
         },
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:aivis/app/app_style.dart';
 import 'package:aivis/app/controller/app_settings_controller.dart';
 import 'package:aivis/app/log.dart';
@@ -11,30 +13,48 @@ import 'package:aivis/service/local_storage_service.dart';
 import 'package:aivis/service/user_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'modules/test/test_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initWindow();
   await Hive.initFlutter();
   //初始化服务
   await initServices();
   //加载.env文件
   await dotenv.load(fileName: "assets/.env");
   //设置状态栏为透明
-  SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  );
-  SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+  // SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
+  //   statusBarColor: Colors.transparent,
+  //   statusBarIconBrightness: Brightness.dark,
+  //   systemNavigationBarColor: Colors.transparent,
+  // );
+  // SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
   runApp(const MyApp());
+}
+
+Future initWindow() async {
+  if (!(Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+    return;
+  }
+  await windowManager.ensureInitialized();
+  WindowOptions windowOptions = const WindowOptions(
+    minimumSize: Size(280, 280),
+    center: true,
+    title: "Aivis",
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
 }
 
 Future initServices() async {
@@ -64,7 +84,15 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    // return GetMaterialApp(home: TestPage());
+    if (kReleaseMode) {
+      return GetMaterialApp(
+          title: LocaleKeys.app_name.tr,
+          onGenerateTitle: (context) => LocaleKeys.app_name.tr,
+          theme: AppStyle.lightTheme,
+          darkTheme: AppStyle.darkTheme,
+          home: TestPage());
+    }
+
     return GetMaterialApp(
       title: LocaleKeys.app_name.tr,
       onGenerateTitle: (context) => LocaleKeys.app_name.tr,
@@ -95,7 +123,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [GetObserver()],
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(1.0)),
           child: Stack(
             children: [
               child!,

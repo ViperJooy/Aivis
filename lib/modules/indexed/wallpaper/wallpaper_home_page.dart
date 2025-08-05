@@ -1,6 +1,6 @@
 import 'package:aivis/app/app_style.dart';
-import 'package:aivis/modules/wallpaper/wallpaper_home_controller.dart';
-import 'package:aivis/modules/wallpaper/wallpapers_list_view.dart';
+import 'package:aivis/modules/indexed/wallpaper/wallpaper_home_controller.dart';
+import 'package:aivis/modules/indexed/wallpaper/wallpapers_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

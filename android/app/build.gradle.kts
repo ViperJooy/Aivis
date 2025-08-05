@@ -28,7 +28,9 @@ val keystoreProperties = Properties().apply {
 android {
     namespace = "com.viper.aivis"
     compileSdk = flutter.compileSdkVersion.toInt()
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
+//    ndkVersion = flutter.ndkVersion
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

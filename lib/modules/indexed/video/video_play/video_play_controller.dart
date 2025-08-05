@@ -13,8 +13,8 @@ import 'package:remixicon/remixicon.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 
-import '../../../app/easy_throttle.dart';
-import '../../../app/utils.dart';
+import '../../../../app/easy_throttle.dart';
+import '../../../../app/utils.dart';
 
 ///播放器配置
 final videoControllerConfiguration =
@@ -64,9 +64,11 @@ class VideoPlayController extends GetxController {
   Timer? _volumeTimer;
   final volumeValue = 0.0.obs;
 
+  //UI隐藏计时器
   Timer? _hideUITimer;
   Timer? _hideLockTimer;
 
+  //小窗
   late Floating pip;
 
   @override

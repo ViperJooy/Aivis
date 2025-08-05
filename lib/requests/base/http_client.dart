@@ -1,4 +1,5 @@
 import 'package:aivis/requests/base/api.dart';
+import 'package:aivis/requests/base/interceptor/base_url_interceptor.dart';
 import 'package:aivis/requests/base/interceptor/app_log_interceptor.dart';
 import 'package:aivis/requests/base/interceptor/error_interceptor.dart';
 import 'package:aivis/requests/base/interceptor/oauth_interceptor.dart';
@@ -24,6 +25,7 @@ class HttpClient {
       ),
     );
     dio.interceptors.addAll([
+      BaseUrlInterceptor(),//动态切换baseurl拦截器
       AppLogInterceptor(), //日志拦截器
       OAuthInterceptor(), //apikey认证拦截器
       ErrorInterceptor(), //错误处理拦截器

@@ -9,8 +9,10 @@ class OAuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    var apikey = Api.kApiKey;
-    options.headers.addAll({"Authorization": apikey});
+    if (!options.uri.toString().contains('movies')) {
+      var apikey = Api.kApiKey;
+      options.headers.addAll({"Authorization": apikey});
+    }
     super.onRequest(options, handler);
   }
 }

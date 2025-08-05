@@ -1,7 +1,7 @@
 import 'package:aivis/app/app_style.dart';
 import 'package:aivis/generated/locales.g.dart';
-import 'package:aivis/modules/video/video_home_controller.dart';
-import 'package:aivis/modules/video/videos_list_view.dart';
+import 'package:aivis/modules/indexed/video/video_home_controller.dart';
+import 'package:aivis/modules/indexed/video/videos_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

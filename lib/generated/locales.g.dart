@@ -45,6 +45,7 @@ class LocaleKeys {
   static const permission_denied_msg = 'permission_denied_msg';
   static const indexed_video = 'indexed_video';
   static const indexed_wallpaper = 'indexed_wallpaper';
+  static const indexed_dou_ban_top_250 = 'indexed_dou_ban_top_250';
   static const indexed_user = 'indexed_user';
 
   static const indexed_video_nature = 'indexed_video_nature';
@@ -122,6 +123,7 @@ class Locales {
     'permission_denied_msg': '@permission permission is denied',
     'indexed_video': 'Video',
     'indexed_wallpaper': 'Wallpaper',
+    'indexed_dou_ban_top_250': 'DOUBAN TOP250',
     'indexed_user': 'Account',
     'indexed_video_nature': 'Nature',
     'indexed_video_abstract': 'Abstract',
@@ -193,6 +195,7 @@ class Locales {
     'permission_denied_msg': '请授予@permission权限',
     'indexed_video': '视频',
     'indexed_wallpaper': '壁纸',
+    'indexed_dou_ban_top_250': '豆瓣 TOP250',
     'indexed_user': '我的',
     'indexed_video_nature': '自然',
     'indexed_video_abstract': '抽象',

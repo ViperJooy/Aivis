@@ -1,15 +1,16 @@
 // ignore_for_file: prefer_inlined_adds
 
+import 'package:aivis/modules/indexed/douban/top250_home_controller.dart';
 import 'package:aivis/modules/indexed/indexed_controller.dart';
 import 'package:aivis/modules/indexed/indexed_page.dart';
 import 'package:aivis/modules/other/web_view/web_view_controller.dart';
 import 'package:aivis/modules/other/web_view/web_view_page.dart';
 import 'package:aivis/modules/user/home/user_home_controller.dart';
 import 'package:aivis/modules/user/home/user_home_page.dart';
-import 'package:aivis/modules/video/video_home_controller.dart';
-import 'package:aivis/modules/video/video_play/video_play_controller.dart';
-import 'package:aivis/modules/video/video_play/video_play_page.dart';
-import 'package:aivis/modules/wallpaper/wallpaper_home_controller.dart';
+import 'package:aivis/modules/indexed/video/video_home_controller.dart';
+import 'package:aivis/modules/indexed/video/video_play/video_play_controller.dart';
+import 'package:aivis/modules/indexed/video/video_play/video_play_page.dart';
+import 'package:aivis/modules/indexed/wallpaper/wallpaper_home_controller.dart';
 import 'package:get/get.dart';
 
 import 'route_path.dart';
@@ -25,6 +26,7 @@ class AppPages {
         BindingsBuilder.put(() => IndexedController()),
         BindingsBuilder.put(() => VideoHomeController()),
         BindingsBuilder.put(() => WallpaperHomeController()),
+        BindingsBuilder.put(() => Top250HomeController()),
         BindingsBuilder.put(() => UserHomeController()),
       ],
     ),

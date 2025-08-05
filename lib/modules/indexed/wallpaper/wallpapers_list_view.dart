@@ -1,14 +1,14 @@
 import 'dart:math';
 
 import 'package:aivis/app/app_style.dart';
-import 'package:aivis/modules/wallpaper/wallpapers_list_controller.dart';
+import 'package:aivis/modules/indexed/wallpaper/wallpapers_list_controller.dart';
 import 'package:aivis/widgets/items/wallpaper_item_widget.dart';
 import 'package:aivis/widgets/keep_alive_wrapper.dart';
 import 'package:aivis/widgets/page_grid_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../widgets/page_list_view.dart';
+import '../../../widgets/page_list_view.dart';
 
 class WallpapersListView extends StatelessWidget {
   final String tag;

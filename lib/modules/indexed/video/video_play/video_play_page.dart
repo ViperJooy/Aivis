@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:aivis/app/utils.dart';
-import 'package:aivis/modules/video/video_play/video_play_controller.dart';
+import 'package:aivis/modules/indexed/video/video_play/video_play_controller.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
