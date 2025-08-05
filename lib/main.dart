@@ -84,7 +84,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    if (kReleaseMode) {
+    if (!kReleaseMode) {
       return GetMaterialApp(
           title: LocaleKeys.app_name.tr,
           onGenerateTitle: (context) => LocaleKeys.app_name.tr,
