@@ -44,7 +44,9 @@ dependencies:
   hive_flutter: ^1.1.0 #持久化存储
   logger: ^2.5.0 #日志
   intl: ^0.20.2 #国际化
-  flutter_localization: ^0.3.2
+  flutter_localizations:
+    sdk: flutter
+#  flutter_localization: ^0.3.2
 
   #Widget
   flex_color_scheme: ^8.2.0 #主题管理
